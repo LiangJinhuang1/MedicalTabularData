@@ -1,0 +1,159 @@
+# Weights & Biases Sweep Configuration
+# This file defines the hyperparameter search space for model training
+# Updated for 50K data: architecture [512,256,128,64], latent_dim=64, dropout=0.35
+
+program: sweep_main.py
+# NOTE:
+# The full Cartesian product of this file's parameter grids is astronomically large.
+# Using `grid` here will either be rejected by W&B as an invalid sweep config or be infeasible to run.
+# Use `random` (or `bayes`) and control total trials via `wandb agent --count N`.
+method: random  # Options: grid, random, bayes
+metric:
+  name: best_val_loss  # Metric to optimize (lower is better)
+  goal: minimize
+parameters:
+  # ========== Training Hyperparameters ==========
+  # Based on good performance: lr=0.002, batch_size=256, weight_decay=1e-3
+  learning_rate:
+    values: [0.0005, 0.001, 0.002, 0.003, 0.005, 0.01]
+    # Grid search: expanded range including smaller and larger values
+  
+  batch_size:
+    values: [32, 64, 128, 256, 512, 1024, 2048, 4096]
+    # Grid search: expanded range including smaller and larger values (up to 4096)
+    # Good performance: 256
+
+  
+  weight_decay:
+    values: [1e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2]
+    # Grid search: expanded range including smaller and larger values
+    # Good performance: 1e-3
+  
+  epochs:
+    values: [100, 200, 300, 400, 500]  # Grid search over different epoch values
+
+  
+  # ========== Model Architecture Hyperparameters ==========
+  # Based on good performance for 50K data: mlp=[512,256,128,64], encoder=[512,256,128,64], tabm_k_heads=12
+  # MLP Base Model
+  mlp_hidden_dim_1:
+    values: [128, 256, 512, 1024, 2048]
+
+
+  
+  mlp_hidden_dim_2:
+    values: [64, 128, 256, 512, 1024]
+   
+  
+  mlp_hidden_dim_3:
+    values: [32, 64, 128, 256, 512]
+   
+  mlp_hidden_dim_4:
+    values: [16, 32, 64, 128, 256]
+   
+  mlp_latent_dim:
+    values: [16, 32, 64, 128, 256]
+   
+  
+  mlp_dropout:
+    values: [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+    
+  # Note: Good performance uses [512, 256, 128, 64] for 50K data
+  encoder_latent_dim:
+    values: [16, 32, 64, 128, 256]
+    # Expanded range including smaller and larger values
+    # Good performance: 64 (updated from 32)
+  
+  encoder_hidden_dim_1:
+    values: [128, 256, 512, 1024, 2048]
+    # Expanded range including smaller and larger values
+    # Good performance: 512 (updated from 256)
+  
+  encoder_hidden_dim_2:
+    values: [64, 128, 256, 512, 1024]
+    # Expanded range including smaller and larger values
+    # Good performance: 256 (updated from 128)
+  
+  encoder_hidden_dim_3:
+    values: [32, 64, 128, 256, 512]
+    # Expanded range including smaller and larger values
+    # Good performance: 128 (updated from 64)
+  
+  encoder_hidden_dim_4:
+    values: [16, 32, 64, 128, 256]
+    # Expanded range including smaller and larger values
+    # Good performance: 64 (new layer)
+  
+  encoder_hidden_dim_5:
+    values: [64, 128, 256, 512, 512]
+    # Expanded range including smaller and larger values
+    # Good performance: 256 (updated from 128)
+  
+  
+  encoder_dropout:
+    values: [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+    # Expanded range including smaller and larger values
+    # Good performance: 0.35 (updated from 0.3)
+  
+  # TabM specific
+  tabm_k_heads:
+    values: [4, 6, 8, 10, 12, 16, 20, 24]
+    # Expanded range including smaller and larger values
+    # Good performance: 12 (updated from 10)
+  
+  tabm_dropout:
+    values: [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+    # Expanded range including smaller and larger values
+    # Good performance: 0.3
+  
+  # TabNet specific
+  tabnet_n_d:
+    values: [8, 16, 32, 64, 128]
+    # Expanded range including smaller and larger values
+    # Good performance: 32 (updated from 8)
+  
+  tabnet_n_a:
+    values: [8, 16, 32, 64, 128]
+    # Expanded range including smaller and larger values
+    # Good performance: 32 (updated from 8)
+  
+  tabnet_n_steps:
+    values: [2, 3, 4, 5, 6, 7, 8]
+    # Expanded range including smaller and larger values
+    # Good performance: 5 (updated from 3)
+  
+  tabnet_gamma:
+    values: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0]
+    # Expanded range including smaller and larger values
+  
+  tabnet_lambda_sparse:
+    values: [0.00001, 0.00005, 0.0001, 0.0005, 0.001, 0.005, 0.01]
+    # Expanded range including smaller and larger values
+    # Good performance: 0.0001 (default)
+  
+  # ========== VAE Hyperparameters ==========
+  vae_beta:
+    values: [0.01, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5]
+    # Expanded range including smaller and larger values
+    # Good performance: 0.1
+  
+  # ========== WAE Hyperparameters ==========
+  wae_lambda_ot:
+    values: [0.01, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0]
+    # Expanded range including smaller and larger values
+    # Good performance: 0.1
+  
+  wae_sinkhorn_eps:
+    values: [0.01, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5]
+    # Expanded range including smaller and larger values
+    # Good performance: 0.1
+  
+  # ========== GW Hyperparameters ==========
+  gw_weight:
+    values: [0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.5, 1.0]
+    # Expanded range including smaller and larger values
+    # Updated range: good performance is 0.1 (was 0.001)
+  
+  # ========== Other Hyperparameters ==========
+  use_log_ratio:
+    values: [false, true]  # Boolean flag

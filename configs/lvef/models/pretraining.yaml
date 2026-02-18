@@ -1,0 +1,41 @@
+# Pre-training Model Configurations
+# Used for TabAE, TabVAE, TabWAE (unsupervised pre-training)
+
+
+pretraining:
+  # Shared encoder configuration for all pre-training models
+  encoder:
+    latent_dim: 8
+    hidden_dims: [64,64,64]       
+    dropout: 0.32
+    batchnorm: true
+    activation: 'ReLU'              # Options: 'ReLU', 'GELU'
+    # Note: Decoder automatically uses reversed hidden_dims
+
+  # Optional TabM-specific encoder override (falls back to encoder if not set)
+  tabm_encoder:
+    latent_dim: 8
+    dropout: 0.32
+  
+  # Model-specific configurations
+  # Note: 
+  #   - TabMEncoder uses k_heads from base_models.tabm
+  #   - TabNetEncoder uses n_d, n_a, n_steps, gamma from base_models.tabnet
+  ae:
+    # Autoencoder (TabAE) - uses encoder config above
+    # No additional parameters needed
+  
+  vae:
+    # Variational Autoencoder (TabVAE)
+    beta: 0.1                    # KL divergence weight (for Beta-VAE)
+    # Uses encoder config above
+  
+  wae:
+    # Wasserstein Autoencoder (TabWAE)
+    latent_dim: null                # Optional: override encoder latent_dim (null = use encoder.latent_dim)
+    regularization_type: 'sinkhorn' # 'sinkhorn' or 'mmd'
+    lambda_ot: 0.001
+    sinkhorn_eps: 0.5               # Sinkhorn regularization parameter
+    sinkhorn_max_iter: 30           # Number of Sinkhorn iterations
+    mmd_kernel_mul: 2               # MMD kernel multiplier (only for 'mmd')
+    mmd_kernel_num: 5               # MMD kernel number (only for 'mmd')

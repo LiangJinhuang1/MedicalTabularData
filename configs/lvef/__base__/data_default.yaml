@@ -1,0 +1,87 @@
+# Data configuration
+data:
+  # Variable type definitions
+  variable_types:
+    continuous:
+      - AGE
+      - BMI
+      - KM
+      - RADT
+      - FDP
+      - DBT
+      - CKadm
+      - CKmax
+      - CKMBa
+      - CKMBm
+      - TROPa
+      - TROPm
+      - KREAas
+      - KREAm
+      - BNP
+      - LDHa
+      - LDHm
+      - ADP
+      - LDL
+      - TRIGL
+      - HBA1C
+      - LPa
+      - LACa
+      - LACm
+      - LVEF_dis
+    binary:
+      - SEX
+      - REA
+      - SHOCK
+      - TFBAN
+      - HoINT
+      - HTN
+      - HLP
+      - DM
+      - FAMH
+    categorical:
+      - ECMO1
+      - ECMO2
+      - ECMO3
+      - ECMO4
+      - PERFl
+      - PERFr
+      - CAD2
+      - CAD3
+      - CLlca
+      - CLlcx
+      - CLrca
+      - CLlad
+      - NIC1
+      - NIC2
+  # Categorical grouping
+  group_categorical: true  # If true, group one-hot columns into categorical variables
+  
+  # Loss weights configuration
+  loss_weights:
+    # Option 1: Use denominator (weights = 1/denominator)
+    weight_denominator: 25
+    # Option 2: Override with specific weights (if specified, these take precedence)
+    # w_bin: 0.04  # Override binary weight (optional)
+    # w_cat: 0.04  # Override categorical weight (optional)
+  
+  # Column groups for related categorical variables
+  column_groups:
+    ECMO:
+      - ECMO1
+      - ECMO2
+      - ECMO3
+      - ECMO4
+    PERF:
+      - PERFl
+      - PERFr
+    CAD:
+      - CAD2
+      - CAD3
+    CL:
+      - CLlca
+      - CLlcx
+      - CLrca
+      - CLlad
+    NIC:
+      - NIC1
+      - NIC2

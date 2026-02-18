@@ -1,0 +1,38 @@
+# Base Model Configurations
+# Used for standalone models (direct regression, no pre-training)
+
+base_models:
+  mlp:
+    # MLPEncoder + EncoderEmbedding architecture
+    encoder:
+      hidden_dims: [256, 256, 256,256]   # Hidden layer dimensions
+      latent_dim: 128            # Latent space dimension
+      dropout: 0.3
+      batchnorm: true
+      activation: 'ReLU'            # Options: 'ReLU', 'GELU'
+  
+  tabm:
+    # TabM-mini (local) architecture
+    hidden_dims: [256, 256, 256,256]      # Hidden layer dimensions
+    k_heads: 10                     # Number of ensemble heads
+    dropout: 0.3
+    activation: 'ReLU'
+  
+  tabnet:
+    # TabNet architecture
+    n_d: 8                          # Decision dimension
+    n_a: 8                         # Attention dimension
+    n_steps: 4                      # Number of sequential decision steps
+    gamma: 1.5                      # Coefficient for feature reuse penalty
+    lambda_sparse: 0.0001
+  
+  #tabpfn:
+    # TabPFN architecture (pre-trained foundation model)
+    # Note: TabPFN is a pre-trained model, training is done via fit() method
+    #device: 'cuda'                  # Device to use ('cuda' or 'cpu')
+    #only_inference: false           # If true, skip training and only do inference
+    #base_path: null                 # Base path for model weights (null = use default cache)
+    #                                # Examples:
+    #                                #   null or not set: use default cache (~/.cache/tabpfn)
+    #                                #   'checkpoints/tabpfn': use project directory
+    #                                #   '/path/to/tabpfn/weights': use absolute path

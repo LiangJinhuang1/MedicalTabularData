@@ -1,0 +1,130 @@
+# Simplified Weights & Biases Sweep Configuration
+# This is a simpler version that only scans key hyperparameters
+# Use this for quick experiments or when computational resources are limited
+# Updated for 50K data: architecture [512,256,128,64], latent_dim=64, dropout=0.35
+
+program: sweep_main.py
+method: bayes  # Options: grid, random, bayes
+metric:
+  name: best_val_loss  # Metric to optimize (lower is better)
+  goal: minimize
+parameters:
+  # ========== Training Hyperparameters (Most Important) ==========
+  # Based on good performance: lr=0.002, batch_size=256, weight_decay=1e-3
+  # Note: Using uniform instead of log_uniform for small ranges to avoid wandb bugs
+  learning_rate:
+    distribution: uniform
+    min: 0.001
+    max: 0.005
+    # Range is only 5x, log_uniform not needed (and has bugs in wandb)
+  
+  batch_size:
+    values: [128, 256, 512]
+  
+  weight_decay:
+    distribution: uniform
+    min: 1e-4
+    max: 1e-2
+    # Range is 100x, but uniform works fine and avoids wandb bugs
+    # Alternative: use discrete values: [1e-4, 5e-4, 1e-3, 5e-3, 1e-2]
+  
+  epochs:
+    value: 100  # Fixed
+  
+  # ========== Model Architecture (Key Parameters Only) ==========
+  # Based on good performance: latent_dim=64, dropout=0.35 (updated for 50K data)
+  
+  # MLP Base Model
+  mlp_latent_dim:
+    values: [32, 64, 128]
+    # Good performance: 64
+  
+  mlp_dropout:
+    distribution: uniform
+    min: 0.25
+    max: 0.45
+    # Good performance: 0.35
+    # Used in: MLP base model (MLPEncoder)
+  
+  # Encoder Dropout (for pre-training models: TabAE, TabVAE, TabWAE)
+  encoder_latent_dim:
+    values: [32, 64, 128]
+    # Good performance: 64
+  
+  encoder_dropout:
+    distribution: uniform
+    min: 0.25
+    max: 0.45
+    # Good performance: 0.35
+    # Used in: Pre-training encoder (MLPEncoder/TabMEncoder/TabNetEncoder) and decoder (TabularDecoder)
+  
+  # TabM Base Model Dropout
+  tabm_dropout:
+    distribution: uniform
+    min: 0.2
+    max: 0.4
+    # Good performance: 0.3
+    # Used in: TabM base model (TabMEncoder)
+  
+  # Note: TabNet base model dropout is currently hardcoded to 0.1 in TabNetLayer
+  # To scan TabNet dropout, code modifications would be needed
+  
+  # ========== VAE/WAE/GW (Key Parameters) ==========
+  # Based on good performance: vae_beta=0.1, wae_lambda_ot=0.1, gw_weight=0.1 (updated)
+  # Note: Using uniform instead of log_uniform for small ranges to avoid wandb bugs
+  vae_beta:
+    distribution: uniform
+    min: 0.05
+    max: 0.2
+    # Range is only 4x, log_uniform not needed
+  
+  wae_lambda_ot:
+    distribution: uniform
+    min: 0.05
+    max: 0.5
+    # Range is 10x, uniform works fine and avoids wandb bugs
+  
+  gw_weight:
+    distribution: uniform
+    min: 0.01
+    max: 0.5
+    # Updated range: good performance is 0.1 (was 0.001)
+    # Range is 50x, uniform works fine and avoids wandb bugs
+    # Alternative: use discrete values: [0.01, 0.05, 0.1, 0.2, 0.5]
+  
+  # ========== Fixed Parameters (Not Scanned) ==========
+  # Based on good performance configuration for 50K data: [512, 256, 128, 64]
+  mlp_hidden_dim_1:
+    value: 512
+  mlp_hidden_dim_2:
+    value: 256
+  mlp_hidden_dim_3:
+    value: 128
+  mlp_hidden_dim_4:
+    value: 64
+  
+  encoder_hidden_dim_1:
+    value: 512  # Good performance uses [512, 256, 128, 64] for 50K data
+  encoder_hidden_dim_2:
+    value: 256
+  encoder_hidden_dim_3:
+    value: 128
+  encoder_hidden_dim_4:
+    value: 64
+  
+  tabm_k_heads:
+    value: 12  # Good performance: 12 (updated from 10)
+  
+  tabnet_n_d:
+    value: 32  # Updated from 8
+  tabnet_n_a:
+    value: 32  # Updated from 8
+  tabnet_n_steps:
+    value: 5  # Updated from 3
+  tabnet_gamma:
+    value: 1.5
+  
+  wae_sinkhorn_eps:
+    value: 0.1
+  use_log_ratio:
+    value: false

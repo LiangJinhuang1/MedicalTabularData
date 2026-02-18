@@ -1,0 +1,10 @@
+# Experiment paths
+paths:
+  # Data paths (single source of truth)
+  train_file: data/mimic_los_data.csv
+  target_col: Length of Stay
+  # Model configurations (unified structure)
+  base_models_config: configs/models/base_models.yaml
+  pretraining_config: configs/models/pretraining.yaml
+  # Data config
+  data_config: configs/__base__/data_default.yaml

@@ -1,0 +1,45 @@
+# Training arguments defaults
+seed: 42
+split_size: 0.2
+exclude_cols: []
+
+loader:
+  num_workers: 8
+  pin_memory: true
+  prefetch_factor: 2
+  persistent_workers: false
+
+training:
+  learning_rate: 0.001
+  epochs: 1
+  batch_size: 1024
+  weight_decay: 1e-5
+  apply_normalization: true
+  lr_pretrain: 0.002
+  lr_tabnet: 0.0005
+  lr_tabm: 0.0002   # TabM often needs lower LR to avoid collapse
+  lr_gw: 0.001
+  
+  # VAE/WAE parameters are defined in configs/models/pretraining.yaml
+  
+  # GW (Gromov-Wasserstein) parameters
+  gw_weight: 0.01  # Weight for Gromov-Wasserstein loss
+  gw_warmup_epochs: 30  # Epochs with gw_weight=0, then linear ramp (regression-first)
+  
+  use_log_ratio: true  # Whether to use log ratio loss instead of MSE loss
+
+  # Task selection (regression or classification)
+  task: regression
+
+  # Classification settings (only used when task: classification)
+  label_threshold: 40
+  label_thresholds: [35, 40, 45, 50]
+  use_threshold_list: false
+  positive_when: above  # above => label=1 if target > threshold
+
+# Data subset settings (used by main.py loop and prepare_data)
+data:
+  subset_col: CHANGE_ME  # Column name for intervention history
+  with_value: 1
+  without_value: 0
+  drop_subset_col: false  # Set true to remove subset_col from features after filtering

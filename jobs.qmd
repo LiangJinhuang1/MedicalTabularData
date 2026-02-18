@@ -1,0 +1,391 @@
+# Slurm (Job Submission)
+The batch system in CORE is the Slurm Workload Manager. Slurm is a job scheduler and resource manager responsible for allocating computational resources, such as CPUs, memory, and GPUs to users. Instead of logging into a compute node and running programs directly, you submit a "job" to Slurm. This job describes the resources you need and the commands you want to run. Slurm then places your job in a queue and runs it for you as soon as the requested resources become available, ensuring fair and efficient use of the cluster for everyone.
+
+To start a job it is advisable that the user is in the directory of his project (`/data/...`).
+Home directories have strict quota limits and should not be used for storing large volumes of data or job outputs.
+If you want to store larger results files, you should use the `/data` directories.
+
+## Job Queues (Slurm Partitions)
+
+Currently **CORE** offers six job queues to users:
+
+
+| Name               | Max Time| Total CPUs | Total RAM  | Total GPUs       | Comment                                     |
+|--------------------|-------|------------|------------|-------------------|-----------------------------------------------|
+| jobs-gpu           | 8h      | 168 | 2000G | 8x A100 (40G),  8x B200 (180G)  | Partition for normal GPU jobs              |
+| jobs-gpu-long      | 7d      | 100         | 500G       | 4x A100 (40G), 4x B200 (180G)	 | Partition for GPU jobs exceeding 8h, less GPUs available        |
+| jobs-cpu           | 8h      | 384        | 2500G      | -                 | Partition for normal CPU-only jobs         |
+| jobs-cpu-long      | 7d      | 128         | 500G       | -                 | Partition for CPU jobs exceeding 8h   |
+| testing            | 15m     | 20         | 500G       | 4x a100_10gb       | For testing purposes, short time limit |
+| jobs-matlab        | 7d      | 75         | 500G       | -                 | Matlab CPU-only jobs                       |
+| jobs-interactive   | 12h     | 100         | 500G       | 11x a100_10gb    | For JupyterHub and custom Jupyter server (max 32G RAM per job) |
+
+Note that the limits are not mutally exclusive, high usage of other partitions and unfavorable distribution of workloads might reduce the resources actually available for jobs in a certain partition.
+For each partition there are additional limits, such that each user can only use up to 80% (rounded down) of the partition's resources.
+Sending jobs to the wrong queue will either fail the jobs or prevent the jobs from being scheduled.
+
+To send your job to one of these partitions either specify `--partition=jobs-xx` on the commandline or add the line `#SBATCH --partition=jobs-xx` to the top of your script.
+
+## Submitting Jobs
+
+There are two primary methods for allocating computational resources using the Slurm workload manager:
+
+### `srun`: Running Interactive Jobs
+
+Use `srun` to run commands or start an interactive shell directly on a compute node. This is ideal for testing, debugging, or tasks that require real-time interaction.
+
+Best for:
+
+- Launching an interactive shell on a compute node.
+- Quickly testing a command or application.
+- Debugging code in a real cluster environment.
+
+Key Characteristics:
+
+- Blocking: Your terminal is occupied until the command finishes.
+- Fragile: The job is killed if your terminal or SSH connection closes.
+- Immediate: Your job runs immediately if resources are available, otherwise srun waits.
+
+Example: Run a bash script named test on the testing partition.
+
+```bash
+srun --account=core-xx --partition=testing ./test.sh
+```
+
+### `sbatch`: Submitting Non-Interactive Batch Jobs
+
+Use `sbatch` to submit a script or program for execution. Slurm will run your script as a batch job once the requested resources are available. This is the standard and recommended way to run computations on the cluster.
+
+Best for:
+
+- Long-running computations.
+- Training runs and data analysis pipelines.
+- Jobs that can run in the background without user interaction.
+
+Key Characteristics:
+
+- Non-Blocking: Your terminal is immediately free after you submit the script.
+- Resilient: The job continues running even if you log out or your connection closes.
+- Schedulable: Your job is queued and runs when its priority and resource requirements are met.
+- Scalable: Easily request multiple nodes, tasks, or GPUs by changing parameters in your script.
+
+Example: Submit a job script named my_job.sbatch:
+
+```bash
+sbatch --account=core-xx --partition=testing my_job.sbatch
+```
+
+## Configuring Jobs
+
+To run a job, you must specify the computational resources it requires, such as CPU cores, memory, and run time. Both `srun` and `sbatch`  use the same set of options to define these requirements. There are two primary ways to provide these options:
+
+1. **Command-Line Flags**
+
+  - You can pass options directly to the srun or sbatch command. This method is convenient for interactive jobs or for temporarily overriding settings in a script.
+  - Syntax: `srun/sbatch --option=value ...`
+
+2. **#SBATCH Directives** in a Script (Recommended Method)
+
+  - For sbatch jobs, the best practice is to embed configuration options directly into your submission script. These special comments, called directives, begin with #SBATCH.
+  - This approach makes your job self-contained, reproducible, and easy to track with version control systems like Git.
+  - Syntax: `#SBATCH --option=value`
+
+Commonly used options are the following:
+
+<div class="options">
+| Functionality| Option                       | Remarks                               |
+|--------------|------------------------------|---------------------------------------|
+| Specify Account| `--account=core-x`          | Mandatory. Select the account of your group or clinic (e.g. `--account=core-rad-cds`). |
+| Specify Partition| `--partition=x`           | Mandatory. Send job to this partition (see [Queues](https://core.pages.gitlab.lrz.de/core/docs/jobs.html#queues-slurm-partitions)).|
+| Request GPU   | `--gres=gpu:<type>:n`  | Request `n` GPUs for your job. Types: a100, b200, a100_10gb. Example: `--gres=gpu:b200:4`.|
+| Request CPU <br>(GPU partition)| `--cpus-per-gpu=n`| Request `n` CPUs per GPU. Too high numbers result in longer queue time. (Recommendation: `n` <= 32) |
+| Request CPU  | `--cpus-per-task=n`          | Request CPUs if not using any GPU. High numbers may result in longer queue time.|
+| Request Memory| `--mem=xGB`                | Request `x` GB of RAM. Select according your needs. High numbers may result in longer queue time or be unavailable.  |
+| Specify Time | `--time=02:00:00`           | Optional. Request (e.g. 2 hours) of runtime. Use this option if you know the length of your job to get scheduled faster. |
+| Output Log <br>Error Log | `-o logs/slurm%j.log`<br>`-o logs/slurm%j.err`          |   Recommended. Redirect the stdout and stderr to a (log) file. `%j` will substitute the current jobid. You need to create the `/logs` directory yourself.|
+| Specify Jobname | `-J jobname`                    |   Specify the name of your job.     |
+| Notifications| `--mail-user=:<address>` <br> `--mail-type=ALL` | Sends job infos the mail `<address>`. Specify what job steps to be notified about via mail-type,<br> (see [List of options](https://slurm.schedmd.com/sbatch.html#OPT_mail-type)).   |
+| Shell | `--pty --unbuffered`              |   (srun only): Use these options if you want to run a shell interactively, the command should then end with `/bin/bash`.   |
+</div> 
+
+## Examples
+
+### srun - Run programs in terminal
+
+Remember to **adapt** the `account` accordingly.
+
+#### Open an interactive shell with a partitioned GPU
+
+```bash
+srun --account=core-xx --mem=1GB --cpus-per-gpu=2 --gres=gpu:a100_10gb --partition=testing --pty --unbuffered /bin/bash
+```
+
+Exit with Ctrl-d or by typing `exit`.
+
+#### Run a simple program that returns the hostname of the worker node
+
+```bash
+srun --account=core-xx --mem=1GB --cpus-per-task=1 --partition=jobs-cpu hostname
+```
+
+For real computing you will need to replace `hostname` by a command wrapped in `singularity exec` as described below.
+
+More information on `srun` in [Slurm documentation](https://slurm.schedmd.com/srun.html).
+
+### sbatch - Run a single job non-interactively
+
+`sbatch` is a Slurm tool which allows the user to start batch jobs which are ideally described by a shell script.
+An example script:
+
+```bash
+#!/bin/sh
+#
+#SBATCH --account=core-xx
+#SBATCH --gres=gpu:a100_10gb
+#SBATCH --cpus-per-gpu=1
+#SBATCH --mem=1GB
+#SBATCH --time=00:00:10
+#SBATCH --partition=testing
+#SBATCH -o logs/slurm%j.log
+#SBATCH -e logs/slurm%j.err
+#SBATCH -J sbatch_single
+
+# Some echos to demonstrate the log files
+echo "This will only show up in the log file"
+
+>&2 echo "This error will show in the error file"
+
+singularity exec --pwd $(pwd) --nv /data/common/radler/radler_pytorch_v4.2.0 python \
+-c "import torch; print(torch.__version__)"
+```
+
+Copy this code to a file (e.g. `my_single_job.sh`), insert your account (e.g. core-rad).
+
+The batch script can be added to the slurm queue via:
+
+```bash
+sbatch my_single_job.sh
+```
+
+You should receive a message like `Submitted batch job 12345`. You can check with `squeue -u $USER` that your job has finished (disappears from the queue, probably is already gone when you call this command). When the job started running you can check both log files `logs/slurm12345.log` and `logs/slurm12345.err` for the outputs of the job.
+
+More arguments for `sbatch` can be looked up in the [Slurm documentation](https://slurm.schedmd.com/sbatch.html).
+
+## Job Management/Inspection
+
+After successful submission of your job, you have different ways of following up on your job. Always check the logs, sometimes jobs finish so quickly, that you might not find them in the queue.
+The following commands might be useful:
+
+```bash
+squeue          # show me the whole job queue
+squeue -u $USER # show me my job queue
+
+sacct           # show me my job history
+seff <jobid>    # show me the resource utilization of my job (insert <jobid>). Note, this is only meaningful information after the job has finished
+scancel         # Remove this job from the queue or kill already running job
+```
+
+If your job is waiting, this can have a number of reasons. Tools to help you are:
+
+- `sprio -l`: Check priorities
+- `susage`: Check current utilization of the cluster (Note that reports on partitions might be overly optimistic and the actual job scheduling have more constraints)
+
+## Advanced job submission
+
+### sbatch - Run several similar jobs
+
+To start multiple jobs with only one batch script, "array" jobs are a good solution and preferred over running a large amount of single batch jobs.
+To achieve this, an array of fixed length is defined in the batch script, corresponding to the number of jobs to be started.
+An example:
+
+```bash
+#!/bin/sh
+#
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=1GB
+#SBATCH --partition=jobs-cpu
+#SBATCH --account=core-xx
+#SBATCH -o logs/slurm%A_%a.log
+#SBATCH -e logs/slurm%A_%a.err
+#SBATCH --array=1-3
+#SBATCH -J sbatch_multi
+
+echo "I'm array-job number $SLURM_ARRAY_TASK_ID"
+mkdir -p results # create directory if needed
+
+# here could be your computational payload
+echo "Hello world!\n $((10+${SLURM_ARRAY_TASK_ID}))" > results/arrayjob_${SLURM_ARRAY_TASK_ID}.txt
+# write something in a file of the directory
+```
+
+The array is defined via the directive `#SBATCH --array 1-3`, which creates an array with indices 1, 2 and 3.
+Submitting this script using `sbatch` (as above) will launch three tasks running this script.
+Note that the placeholders in the `-o` and `-e` directives have changed.
+`%A` contains the job ID and `%a` the task array index, allowing you to separate the log files for each task in the array.
+
+The only difference between the runs is that the variable `SLURM_ARRAY_TASK_ID` contains the array index of the respective job.
+This needs to be used to run different tasks in a single array job.
+A good practice is to use config files to run your experiments.
+As a toy example create three configs:
+
+```bash
+mkdir config
+mkdir logs
+cat > config/1.txt << EOF
+1
+EOF
+cat > config/2.txt << EOF
+2
+EOF
+cat > config/3.txt << EOF
+3
+EOF
+```
+
+An example batch script could then look like:
+
+```bash
+#!/bin/sh
+#
+#SBATCH --account=core-xx
+#SBATCH --gres=gpu:a100_10gb
+#SBATCH --cpus-per-gpu=1
+#SBATCH --mem=8GB
+#SBATCH --partition=testing
+#SBATCH -o logs/slurm%A_%a.log
+#SBATCH -e logs/slurm%A_%a.err
+#SBATCH --array=1-3
+#SBATCH -J sbatch_multi
+
+# get the n-th config file and write it to the variable "file"
+file=$(ls config | head -n $SLURM_ARRAY_TASK_ID | tail -n 1)
+
+singularity exec --pwd $(pwd) --nv /data/common/radler_pytorch_v3.3.1 python << EOF
+import math
+with open("config/$file") as f:
+    val = int(f.read().strip())
+    print(f"My value is {val}")
+    print(f"The sine of my value is {math.sin(val)}")
+
+EOF
+```
+
+In this example batch script, `SLURM_ARRAY_TASK_ID` specifies the configuration file in order given by `ls`, which is one way to organize your experiments.
+The [Here Document](https://en.wikipedia.org/wiki/Here_document) (the construction `<< EOF ... EOF`) can be replaced with a common python script and for configuration files a format like yaml will be better suited for parsing multiple parameters.
+
+### Limiting the number of jobs running at the same time
+
+If the user wants to limit the number of jobs run in parallel, the option `#SBATCH --array=1-3%1` can be used.
+`%n` means that only `n` jobs are run in parallel, cf. also [sbatch documentation](https://slurm.schedmd.com/sbatch.html#OPT_array).
+
+You can also, after you submitted the array job, change the number of jobs running in parallel (e.g. limit during the day, run many in parallel on the weekend). To limit the number of jobs to e.g. 1, run: `scontrol update ArrayTaskThrottle=1 JobId=$JOBID` (Replace `$JOBID` by the corresponding ID of the job)
+
+## Jobs exceeding the time limit
+
+The partitions with most of the resources (jobs-cpu and jobs-gpu) currently (mid 2023) have a time limit of 8h.
+The time limit ensures that users cannot block the whole cluster for longer times, such that at latest after 8 hours other users can get their jobs squeezed in.
+
+For more resource-hungry tasks multiple jobs need to be submitted.
+First a suitable checkpointing mechanism needs to be implemented for the task (e.g. in [pytorch-lightning](https://pytorch-lightning.readthedocs.io/en/latest/common/checkpointing.html)), i.e. saving all information needed for continuation of the job to disk.
+This is always a good idea, since it also protects you from any other unexpected failure a job could experience and lead to wasted compute time.
+
+There are different ways to chain your jobs such that longer runtimes can be realized.
+
+- Array jobs, where each task of the array continues the calculation of the previous
+- Automatic requeueing of jobs in case the job did not finish
+
+### Use requeue to run the job as many times as necessary
+
+This is **work in progress** and has been extracted from another project. You will still need to adapt all paths and fill in missing functions, but I think this could be helpful as starting point for advanced users:
+
+```bash
+#!/bin/bash
+#
+# Adapt resources/settings to your needs
+#SBATCH --gres=gpu:a100_10gb
+#SBATCH --cpus-per-gpu=1
+#SBATCH --mem=8GB
+#SBATCH --partition=testing
+#SBATCH --account=core-xx
+#SBATCH -J resubmit_me
+#SBATCH -o logs/slurm%j.log
+#SBATCH -e logs/slurm%j.err
+#SBATCH --open-mode=append
+#SBATCH --signal=SIGUSR1@90
+#SBATCH --time=10:00 # obviously only for testing
+
+echo "Job ID: ${SLURM_JOBID}"
+echo "Restart count: $SLURM_RESTART_COUNT"
+
+srun singularity exec --nv --pwd $(pwd) -H /data/core-rad/bschacht/myfakehome \
+          -B /data/core-rad/bschacht/,/data2/core-rad/,/data/common \
+          /data/common/radler/radler_pytorch_v3.7.0 /bin/bash <<EOF
+echo "Running on node $(hostname)"
+export CIFAR10_DIR="/data/common/CIFAR10"
+exec python -u train.py $@
+EOF
+
+ret_val="$?"
+echo "** return code: $ret_val **"
+if [ "$ret_val" == 99 ]; then
+    echo "** Requeueing job ${SLURM_JOBID} **"
+    scontrol requeue ${SLURM_JOBID}
+fi
+```
+
+With the train script `train.py`:
+
+```python
+import signal
+import sys
+from model import train
+
+def signal_handler(signum, stack):
+    print(f"received signal that job is ending: {signum}")
+    # here you could do additional handling of job shutdown, e.g. write out some information
+    sys.exit(99)
+
+if __name__ == "__main__":
+    # register signal handler
+    signal.signal(signal.SIGUSR1, signal_handler)
+    # run (arbitrary) training code, should support automatical resuming from checkpoints, here just included as example
+    train()
+```
+
+Some notes:
+
+- Running `scontrol requeue` inside the container did not work for me even with slurm client tools installed. Probably needs advanced magic to get this information out of the container.
+- That's why I opted to use a return code (99) from the python script to indicate that the script would have liked to run longer
+- The sbatch script issues a requeuing if and only if the return code 99 is received
+- I'm using `exec python ...` here to ensure that the exit code of the script is properly propagated
+- The python script uses the signal library to catch the out-of time signal and then returns 99. Other errors should have other return codes (usually 1) and cause the job to terminate and not resubmit itself
+- Using `srun` to start `singularity ...` is probably important for signal propagation to the main process run by `sbatch`
+- You should keep an eye of the job, because in principle with the right bug it could resubmit itself perpetually.
+- `scancel` is your friend if you misconfigured something and your job keeps requeuing itself
+
+### Use array jobs to run longer than the time limit (old approach)
+
+You can use signalling
+
+```bash
+#SBATCH --signal=USR1@60
+```
+
+to signal the job before (here: 60s) it's killed due to the time limit.
+This signal can be used to "trap" a function call, i.e. when the signal is sent the job will interrupt, but the function `save_checkpoint` (which is task-dependent) still be called
+
+```shell
+trap save_checkpoint USR1
+```
+
+within the remaining time.
+
+**Note:** Depending on your use case, you might be able to regularly write checkpoints and continue the job using the most recent checkpoint without using the signalling mechanism.
+
+The remainder of the script should be checking if a checkpoint exists and to start your processing accordingly.
+An example (pure bash) script is included in the advanced examples in the core-demo git ([script](https://gitlab.lrz.de/core/core-demo/-/blob/main/advanced_examples/checkpointed_submission.sh)).
+
+
+# Further reading
+- [FAQ](faq.qmd)
+- [Recipes](recipes.qmd)

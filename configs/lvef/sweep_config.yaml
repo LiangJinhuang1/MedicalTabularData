@@ -1,0 +1,165 @@
+# Weights & Biases Sweep Configuration
+# This file defines the hyperparameter search space for model training
+# Updated for 50K data: architecture [512,256,128,64], latent_dim=64, dropout=0.35
+
+program: sweep_main.py
+method: bayes  # Options: grid, random, bayes
+metric:
+  name: best_val_loss  # Metric to optimize (lower is better)
+  goal: minimize
+parameters:
+  # ========== Training Hyperparameters ==========
+  # Based on good performance: lr=0.002, batch_size=256, weight_decay=1e-3
+  learning_rate:
+    distribution: uniform
+    min: 0.001
+    max: 0.005
+    # Using uniform instead of log_uniform to avoid wandb bugs
+    # Alternative: use discrete values around good performance
+    # values: [0.001, 0.002, 0.003, 0.005]
+  
+  batch_size:
+    values: [128, 256, 512]
+    # Good performance: 256
+  
+  weight_decay:
+    distribution: uniform
+    min: 1e-4
+    max: 1e-2
+    # Using uniform instead of log_uniform to avoid wandb bugs
+    # Good performance: 1e-3
+    # Alternative: use discrete values
+    # values: [1e-4, 5e-4, 1e-3, 5e-3, 1e-2]
+  
+  epochs:
+    value: 100  # Fixed for sweep, can adjust if needed
+    # Alternative: use distribution
+    # distribution: int_uniform
+    # min: 50
+    # max: 200
+  
+  # ========== Model Architecture Hyperparameters ==========
+  # Based on good performance for 50K data: mlp=[512,256,128,64], encoder=[512,256,128,64], tabm_k_heads=12
+  # MLP Base Model
+  mlp_hidden_dim_1:
+    values: [256, 512, 1024]
+    # Good performance: 512
+  
+  mlp_hidden_dim_2:
+    values: [128, 256, 512]
+    # Good performance: 256
+  
+  mlp_hidden_dim_3:
+    values: [64, 128, 256]
+    # Good performance: 128
+  
+  mlp_hidden_dim_4:
+    values: [32, 64, 128]
+    # Good performance: 64
+  
+  mlp_latent_dim:
+    values: [32, 64, 128]
+    # Good performance: 64 (updated from 32)
+  
+  mlp_dropout:
+    distribution: uniform
+    min: 0.25
+    max: 0.45
+    # Good performance: 0.35 (updated from 0.3)
+  
+  # Encoder (for pre-training models)
+  # Note: Good performance uses [512, 256, 128, 64] for 50K data
+  encoder_latent_dim:
+    values: [32, 64, 128]
+    # Good performance: 64 (updated from 32)
+  
+  encoder_hidden_dim_1:
+    values: [256, 512, 1024]
+    # Good performance: 512 (updated from 256)
+  
+  encoder_hidden_dim_2:
+    values: [128, 256, 512]
+    # Good performance: 256 (updated from 128)
+  
+  encoder_hidden_dim_3:
+    values: [64, 128, 256]
+    # Good performance: 128 (updated from 64)
+  
+  encoder_hidden_dim_4:
+    values: [32, 64, 128]
+    # Good performance: 64 (new layer)
+  
+  encoder_dropout:
+    distribution: uniform
+    min: 0.25
+    max: 0.45
+    # Good performance: 0.35 (updated from 0.3)
+  
+  # TabM specific
+  tabm_k_heads:
+    values: [8, 10, 12, 16]
+    # Good performance: 12 (updated from 10)
+  
+  tabm_dropout:
+    distribution: uniform
+    min: 0.2
+    max: 0.4
+    # Good performance: 0.3
+  
+  # TabNet specific
+  tabnet_n_d:
+    values: [16, 32, 64]
+    # Good performance: 32 (updated from 8)
+  
+  tabnet_n_a:
+    values: [16, 32, 64]
+    # Good performance: 32 (updated from 8)
+  
+  tabnet_n_steps:
+    values: [3, 4, 5, 6]
+    # Good performance: 5 (updated from 3)
+  
+  tabnet_gamma:
+    distribution: uniform
+    min: 1.0
+    max: 2.0
+  
+  # ========== VAE Hyperparameters ==========
+  vae_beta:
+    distribution: uniform
+    min: 0.05
+    max: 0.2
+    # Using uniform instead of log_uniform to avoid wandb bugs
+    # Good performance: 0.1
+    # Alternative: use discrete values
+    # values: [0.05, 0.1, 0.15, 0.2]
+  
+  # ========== WAE Hyperparameters ==========
+  wae_lambda_ot:
+    distribution: uniform
+    min: 0.05
+    max: 0.5
+    # Using uniform instead of log_uniform to avoid wandb bugs
+    # Good performance: 0.1
+    # Alternative: use discrete values
+    # values: [0.05, 0.1, 0.2, 0.5]
+  
+  wae_sinkhorn_eps:
+    distribution: uniform
+    min: 0.05
+    max: 0.2
+    # Good performance: 0.1
+  
+  # ========== GW Hyperparameters ==========
+  gw_weight:
+    distribution: uniform
+    min: 0.01
+    max: 0.5
+    # Updated range: good performance is 0.1 (was 0.001)
+    # Using uniform instead of log_uniform to avoid wandb bugs
+    # Alternative: use discrete values
+    # values: [0.01, 0.05, 0.1, 0.2, 0.5]
+  
+  # ========== Other Hyperparameters ==========
+  use_log_ratio:
+    values: [false, true]  # Boolean flag
