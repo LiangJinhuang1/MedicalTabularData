@@ -1,0 +1,10 @@
+# Experiment paths
+paths:
+  # Data paths (can also be found in data_config)
+  train_file: data/Cartel3.csv
+  target_col: LVEF_dis
+  # Model configurations (unified structure)
+  base_models_config: configs/lvef/models/base_models.yaml
+  pretraining_config: configs/lvef/models/pretraining.yaml
+  # Data config
+  data_config: configs/lvef/__base__/data_default.yaml

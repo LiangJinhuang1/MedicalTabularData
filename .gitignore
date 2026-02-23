@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+
+# Project: datasets & generated outputs (do not upload)
+data/
+output/
+wandb/
+physionet.org/
+
+# Docs / exports not needed on GitHub
+LMU_SLDS_Thesis_Template/
+report.rtf
+*.pdf
+scripts/
+configs/mimic_iv/
+
+# Local scratch
+back_up.py
+Similarity_analysis.py
+sweep_main.py
+jobs.qmd

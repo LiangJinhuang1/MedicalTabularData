@@ -1,0 +1,87 @@
+# Training arguments defaults
+seed: 12345
+split_size: 0.2
+#exclude_cols: []
+exclude_cols: []
+
+loader:
+  num_workers: 8
+  pin_memory: true
+  prefetch_factor: 4
+  persistent_workers: true
+
+
+training:
+  learning_rate: 0.002
+  epochs: 400
+  batch_size: 512
+  batch_size_tabnet: 64
+  weight_decay: 3e-4
+  weight_decay_pretrain_tabm: 1e-4
+  head_dropout: 0.32
+  apply_normalization: true
+  lr_pretrain: 0.003
+  lr_pretrain_tabm: 0.003
+  lr_tabnet: 0.0005
+  lr_tabm: 0.001
+  lr_gw: 0.001
+  lr_embedding: 0.0015
+  lr_embedding_tabm: 0.0015
+  lr_embedding_tabnet: 0.0015
+  # Fine-tuning encoder learning rates (smaller than head)
+  lr_embedding_encoder: 0.0004
+  lr_embedding_encoder_tabm: 0.0004
+  lr_embedding_encoder_tabnet: 0.0004
+  lr_multitask: 0.0025
+  lr_multitask_tabm: 0.002
+  lr_multitask_tabnet: 0.002
+  lr_multitask_wae: 0.0015
+
+  # Multi-task loss balancing 
+  multitask_recon_weight: 0.3
+  gw_weight: 0.001
+  gw_epsilon: 0.3
+  gw_warmup_epochs: 0
+  gw_detach_transport: true
+
+  # WAE eval: make OT term deterministic to reduce noisy val spikes
+  deterministic_ot_eval: true
+  ot_eval_seed: 12345
+
+  use_log_ratio: false  # Whether to use log ratio loss instead of MSE loss
+
+  # Task selection (regression or classification)
+  task: regression
+  #task: classification
+ 
+  # Classification settings (only used when task: classification)
+  #label_threshold: 0.40
+  label_thresholds: [0.35, 0.40, 0.50]
+  use_threshold_list: true
+  positive_when: above  # above => label=1 if target > threshold
+
+#data:
+  #subset_col: HoINT   # Column name for intervention history
+  #with_value: 1
+  #without_value: 0
+  #drop_subset_col: true  # Set true to remove subset_col from features after filtering
+  # lab only columns
+  #keep_cols:
+  #  - CKadm
+  #  - CKmax
+  #  - CKMBa
+  #  - CKMBm
+  #  - TROPa
+  #  - TROPm
+  #  - KREAa
+  #  - KREAm
+  #  - BNP
+  #  - LDHa
+  #  - LDHm
+  #  - ADP
+  #  - LDL
+  #  - TRIGL
+  #  - HBA1C
+  #  - LPa
+  #  - LACa
+  #  - LACm

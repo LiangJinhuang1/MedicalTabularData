@@ -1,0 +1,42 @@
+# Base Model Configurations
+# Used for standalone models (direct regression, no pre-training)
+
+base_models:
+  mlp:
+    # MLPEncoder + EncoderEmbedding architecture
+    encoder:
+      hidden_dims: [64,64,64]   
+      latent_dim: 8
+      dropout: 0.32
+      batchnorm: true
+      activation: 'ReLU'            # Options: 'ReLU', 'GELU'
+
+  tabm:
+    hidden_dims: [64,64,64]    
+    k_heads: 8
+    dropout: 0.32
+    batchnorm: true
+    activation: 'ReLU'
+  
+  tabnet:
+    # TabNet architecture
+    n_d: 16                         # Balanced decision dimension
+    n_a: 16                         # Balanced attention dimension
+    latent_dim: 8                  # Latent dimension for TabNet encoder/embeddings
+    n_steps: 3                      # Moderate number of steps
+    gamma: 1.5                      # Moderate feature reuse penalty
+    n_independent: 2                # Number of independent GLU layers
+    n_shared: 2                     # Number of shared GLU layers
+    epsilon: 1e-15                  # Numerical stability for mask loss
+    virtual_batch_size: 128         # Default ghost batch size
+    batch_size_tabnet: 64           
+    momentum: 0.02                  # BatchNorm momentum
+    mask_type: 'entmax'             # 'sparsemax' or 'entmax'
+    lambda_sparse: 0.00001          # Default sparsity penalty
+
+  tabpfn:
+    # TabPFN architecture (pre-trained foundation model)
+    # Note: TabPFN is a pre-trained model, training is done via fit() method
+    device: 'cuda'                  # Device to use ('cuda' or 'cpu')
+    only_inference: false           # If true, skip training and only do inference
+    base_path: null                 # Base path for model weights (null = use default cache)
