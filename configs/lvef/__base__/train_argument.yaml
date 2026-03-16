@@ -1,16 +1,13 @@
-# Training arguments defaults
+# Training arguments defaults (synced from latest full_config)
 seed: 12345
 split_size: 0.2
-#exclude_cols: []
-exclude_cols: []
+exclude_cols: [LACm, LVEF_dis]
 
 loader:
   num_workers: 8
-  pin_memory: true
+  pin_memory: true 
   prefetch_factor: 4
   persistent_workers: true
-
-
 training:
   learning_rate: 0.002
   epochs: 400
@@ -20,6 +17,9 @@ training:
   weight_decay_pretrain_tabm: 1e-4
   head_dropout: 0.32
   apply_normalization: true
+  # If true, apply log1p(x) = log(1 + x) to continuous feature columns.
+  # Recommended to set either apply_normalization OR continuous_log_transform to true, not both.
+  continuous_log_transform: false
   lr_pretrain: 0.003
   lr_pretrain_tabm: 0.003
   lr_tabnet: 0.0005
@@ -48,8 +48,11 @@ training:
   deterministic_ot_eval: true
   ot_eval_seed: 12345
 
+
   use_log_ratio: false  # Whether to use log ratio loss instead of MSE loss
 
+  # Target transformation (regression only)
+  target_log_transform: true
   # Task selection (regression or classification)
   task: regression
   #task: classification
@@ -60,28 +63,29 @@ training:
   use_threshold_list: true
   positive_when: above  # above => label=1 if target > threshold
 
-#data:
-  #subset_col: HoINT   # Column name for intervention history
-  #with_value: 1
-  #without_value: 0
-  #drop_subset_col: true  # Set true to remove subset_col from features after filtering
+data:
+  subset: all
+  # subset_col: HoINT   # Column name for intervention history
+  # with_value: 1
+  # without_value: 0
+  # drop_subset_col: true  # Set true to remove subset_col from features after filtering
   # lab only columns
-  #keep_cols:
-  #  - CKadm
-  #  - CKmax
-  #  - CKMBa
-  #  - CKMBm
-  #  - TROPa
-  #  - TROPm
-  #  - KREAa
-  #  - KREAm
-  #  - BNP
-  #  - LDHa
-  #  - LDHm
-  #  - ADP
-  #  - LDL
-  #  - TRIGL
-  #  - HBA1C
-  #  - LPa
-  #  - LACa
-  #  - LACm
+  # keep_cols:
+  #   - CKadm
+  #   - CKmax
+  #   - CKMBa
+  #   - CKMBm
+  #   - TROPa
+  #   - TROPm
+  #   - KREAa
+  #   - KREAm
+  #   - BNP
+  #   - LDHa
+  #   - LDHm
+  #   - ADP
+  #   - LDL
+  #   - TRIGL
+  #   - HBA1C
+  #   - LPa
+  #   - LACa
+  #   - LACm

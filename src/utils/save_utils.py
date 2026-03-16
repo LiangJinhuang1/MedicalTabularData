@@ -72,7 +72,10 @@ def save_checkpoint(
     train_loss: float,
     val_loss: float,
     model_name: str,
-    is_best: bool = False
+    is_best: bool = False,
+    val_metric: float = None,
+    metric_name: str = None,
+    best_criterion: str = None
 ):
     """
     Save model checkpoint (only best models).
@@ -88,6 +91,12 @@ def save_checkpoint(
         'val_loss': val_loss,
         'model_name': model_name
     }
+    if val_metric is not None:
+        checkpoint['val_metric'] = float(val_metric)
+    if metric_name:
+        checkpoint['metric_name'] = str(metric_name)
+    if best_criterion:
+        checkpoint['best_criterion'] = str(best_criterion)
     
     # Save best model only
     if is_best:
@@ -773,13 +782,15 @@ class LossTracker:
             for model_name in model_names:
                 best_epoch = int(self.best_epoch[model_name])
                 best_loss = float(self.best_val_loss[model_name])
-                best_r2 = self.best_val_r2.get(model_name, float('nan'))
+                best_r2_at_loss = float('nan')
+                if best_epoch >= 0 and best_epoch < len(self.val_r2_scores.get(model_name, [])):
+                    best_r2_at_loss = float(self.val_r2_scores[model_name][best_epoch])
                 best_auc_at_loss = float('nan')
                 if best_epoch >= 0 and best_epoch < len(self.val_auc_scores.get(model_name, [])):
                     best_auc_at_loss = self.val_auc_scores[model_name][best_epoch]
                 
-                if not np.isnan(best_r2) and best_r2 != float('-inf'):
-                    f.write(f"{model_name:<{col_widths[0]}} | {best_epoch + 1:>{col_widths[1]}} | {best_loss:>{col_widths[2]}.4f} | {best_r2:>{col_widths[3]}.4f} | {best_auc_at_loss:>{col_widths[4]}.4f}\n")
+                if not np.isnan(best_r2_at_loss) and best_r2_at_loss != float('-inf'):
+                    f.write(f"{model_name:<{col_widths[0]}} | {best_epoch + 1:>{col_widths[1]}} | {best_loss:>{col_widths[2]}.4f} | {best_r2_at_loss:>{col_widths[3]}.4f} | {best_auc_at_loss:>{col_widths[4]}.4f}\n")
                 else:
                     auc_display = f"{best_auc_at_loss:.4f}" if not np.isnan(best_auc_at_loss) else "N/A"
                     f.write(f"{model_name:<{col_widths[0]}} | {best_epoch + 1:>{col_widths[1]}} | {best_loss:>{col_widths[2]}.4f} | {'N/A':>{col_widths[3]}} | {auc_display:>{col_widths[4]}}\n")
@@ -855,7 +866,10 @@ class LossTracker:
             for model_name in model_names:
                 best_epoch = int(self.best_epoch[model_name])
                 best_loss = float(self.best_val_loss[model_name])
-                best_r2_at_loss = self.best_val_r2.get(model_name, float('nan'))
+                if best_epoch >= 0 and best_epoch < len(self.val_r2_scores.get(model_name, [])):
+                    best_r2_at_loss = float(self.val_r2_scores[model_name][best_epoch])
+                else:
+                    best_r2_at_loss = float('nan')
                 best_r2_epoch = int(self.best_r2_epoch.get(model_name, -1))
                 best_r2 = self.best_val_r2.get(model_name, float('nan'))
                 best_auc_epoch = int(self.best_auc_epoch.get(model_name, -1))

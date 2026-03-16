@@ -150,7 +150,17 @@ def load_checkpoint(model, checkpoints_dir, model_name, device):
         
         
         model.load_state_dict(state_dict, strict=False)
-        print(f'Best {model_name} loaded - Val Loss: {checkpoint["val_loss"]:.4f} at epoch {checkpoint["epoch"]+1}')
+        val_loss = checkpoint.get("val_loss", float("nan"))
+        val_metric = checkpoint.get("val_metric", float("nan"))
+        metric_name = checkpoint.get("metric_name", "metric")
+        criterion = checkpoint.get("best_criterion", "best")
+        if isinstance(val_metric, (int, float)) and not math.isnan(float(val_metric)):
+            print(
+                f'Best {model_name} loaded - {criterion}: {metric_name}={float(val_metric):.4f}, '
+                f'Val Loss={float(val_loss):.4f} at epoch {checkpoint["epoch"]+1}'
+            )
+        else:
+            print(f'Best {model_name} loaded - Val Loss: {float(val_loss):.4f} at epoch {checkpoint["epoch"]+1}')
         return checkpoint
     else:
         print(f'\nWarning: Best {model_name} checkpoint not found at {best_path}, using current state')
@@ -1499,7 +1509,16 @@ def train(target_col, exclude_cols=None, train_file=None, train_args=None,
         for model, optimizer, train_loss, test_loss, model_name in checkpoint_configs:
             is_best = (test_loss == float(loss_tracker.best_val_loss.get(model_name, float('inf'))))
             if is_best and save_outputs:
-                save_checkpoint(experiment_dir, epoch, model, optimizer, train_loss, test_loss, model_name, is_best)
+                save_checkpoint(
+                    experiment_dir=experiment_dir,
+                    epoch=epoch,
+                    model=model,
+                    optimizer=optimizer,
+                    train_loss=train_loss,
+                    val_loss=test_loss,
+                    model_name=model_name,
+                    is_best=is_best,
+                )
 
         epoch_time = time.time() - epoch_start_time
         logger.info("Epoch %d completed in %.2fs", epoch + 1, epoch_time)

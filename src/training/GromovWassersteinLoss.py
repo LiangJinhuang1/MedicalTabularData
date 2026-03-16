@@ -137,6 +137,10 @@ class GromovWassersteinLoss(nn.Module):
 
         # 4. Outcome-aware metric regression
         if self.reg_weight > 0.0 and y is not None:
+            # Pairwise regularization needs at least 2 samples.
+            # For singleton batches (e.g., last validation batch), skip it to avoid NaN from empty mean.
+            if batch_size < 2:
+                return gw_loss
             if y.dim() == 1:
                 y = y.unsqueeze(1)
             y_diff = torch.abs(y - y.t())

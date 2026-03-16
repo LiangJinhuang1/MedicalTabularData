@@ -22,10 +22,10 @@ env/
 .DS_Store
 
 # Project: datasets & generated outputs (do not upload)
-data/
-output/
-wandb/
-physionet.org/
+/data/
+/output/
+/wandb/
+/physionet.org/
 
 # Docs / exports not needed on GitHub
 LMU_SLDS_Thesis_Template/
@@ -33,6 +33,12 @@ report.rtf
 *.pdf
 scripts/
 configs/mimic_iv/
+
+# Generated result tables / analysis helpers
+aggregated_best_results_stats*.csv
+calc_best_results_stats.py
+debug/
+run_inference_eval.py
 
 # Local scratch
 back_up.py

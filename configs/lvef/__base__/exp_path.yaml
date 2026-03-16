@@ -2,7 +2,7 @@
 paths:
   # Data paths (can also be found in data_config)
   train_file: data/Cartel3.csv
-  target_col: LVEF_dis
+  target_col: LACa
   # Model configurations (unified structure)
   base_models_config: configs/lvef/models/base_models.yaml
   pretraining_config: configs/lvef/models/pretraining.yaml
